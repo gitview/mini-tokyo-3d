@@ -95,6 +95,9 @@ const configs = {
 
     },
 
+    // Keisei Location URL
+    keiseiUrl: 'https://zaisen.tid-keisei.jp/data/traffic_info.json',
+
     // ATIS URL
     atisUrl: 'https://mini-tokyo.appspot.com/atisinfo',
 

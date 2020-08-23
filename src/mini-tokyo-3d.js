@@ -62,6 +62,18 @@ const RAILWAY_SOBURAPID = 'JR-East.SobuRapid',
     RAILWAY_NAMBOKU = 'TokyoMetro.Namboku',
     RAILWAY_MITA = 'Toei.Mita';
 
+const RAILWAYS_KEISEI_HOKUSO_SHIBAYAMA = [
+    'Keisei.Main',
+    'Keisei.HigashiNarita',
+    'Keisei.Oshiage',
+    'Keisei.Chiba',
+    'Keisei.Chihara',
+    'Keisei.NaritaSkyAccess',
+    'Keisei.Kanamachi',
+    'Hokuso.Hokuso',
+    'Shibayama.Shibayama'
+];
+
 const TRAINTYPE_JREAST_LIMITEDEXPRESS = 'JR-East.LimitedExpress';
 
 const DEGREE_TO_RADIAN = Math.PI / 180;
@@ -1774,8 +1786,32 @@ export default class extends mapboxgl.Evented {
 
         urls.push(`${url}odpt:Train?odpt:operator=${operators}&acl:consumerKey=${key}`);
 
+        urls.push(configs.keiseiUrl);
+
         Promise.all(urls.map(helpers.loadJSON)).then(trainData => {
             me.realtimeTrainLookup = {};
+
+            const {TS, EK} = trainData.pop();
+
+            if (TS && EK) {
+                [...TS, ...EK].forEach(({tr}) => {
+                    tr.forEach(trainRef => {
+                        const delay = trainRef.dl * 60000;
+
+                        RAILWAYS_KEISEI_HOKUSO_SHIBAYAMA.forEach(railwayID => {
+                            const id = `${railwayID}.${trainRef.no}`,
+                                train = me.trainLookup[id];
+
+                            if (train && train.delay !== delay) {
+                                train.delay = delay;
+                                if (me.activeTrainLookup[id]) {
+                                    me.stopTrain(train, true);
+                                }
+                            }
+                        });
+                    });
+                });
+            }
 
             trainData.pop().forEach(trainRef => {
                 const delay = (trainRef['odpt:delay'] || 0) * 1000,
